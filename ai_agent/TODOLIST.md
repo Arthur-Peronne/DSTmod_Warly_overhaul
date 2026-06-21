@@ -2,12 +2,12 @@
 
 ## Phase 1 — Fondations
 
-- [ ] **1. Créer la structure du mod**
-  - [ ] `modinfo.lua`, `modmain.lua` minimal (print de debug), arborescence `scripts/components/` et `scripts/prefabs/`
+- [x] **1. Créer la structure du mod**
+  - [x] `modinfo.lua`, `modmain.lua` minimal (print de debug), arborescence `scripts/components/` et `scripts/prefabs/`
 
 - [ ] **2. Patcher les stats de base de Warly**
   - [ ] Hunger 200, supprimer hunger drain +20% — via `AddPrefabPostInit("warly", ...)`
-  - [ ] Vider les items de départ vanilla (potatoes/garlic) — on les remettra à l'étape 13
+  - [ ] Vider les items de départ vanilla (potatoes/garlic) — on remettra le crockpot à l'étape 13
 
 - [ ] **3. Supprimer les mécaniques vanilla**
   - [ ] Retirer les recettes de spiced foods et les items (grindingmill, seasoningstation) de la liste Warly

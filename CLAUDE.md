@@ -15,6 +15,7 @@ Mod Don't Starve Together pour reworker le personnage Warly. Développeur : back
 | [CONTENT.md](ai_agent/CONTENT.md) | Spécifications complètes du mod (stats, mécaniques, plats, options) |
 | [TECHNICAL.md](ai_agent/TECHNICAL.md) | Architecture prévue + analyse du code source DST |
 | [TODOLIST.md](ai_agent/TODOLIST.md) | Tâches d'implémentation par phase |
+| [CONVERSATIONS.md](ai_agent/CONVERSATIONS.md) | Journal des sessions de travail |
 
 ## Principe architectural clé
 
