@@ -4,6 +4,10 @@
 
 Mod Don't Starve Together pour reworker le personnage Warly. Développeur : background data scientist / physique computationnelle, connaît Python, apprend Lua pour ce projet. Objectif : rendre Warly plus viable en solo, avec une identité culinaire plus forte et cohérente.
 
+## Directives agent (chargées automatiquement)
+
+@ai_agent/AGENT.md
+
 ## Todolist (chargée automatiquement)
 
 @ai_agent/TODOLIST.md

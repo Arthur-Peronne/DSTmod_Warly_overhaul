@@ -5,13 +5,13 @@
 - [x] **1. Créer la structure du mod**
   - [x] `modinfo.lua`, `modmain.lua` minimal (print de debug), arborescence `scripts/components/` et `scripts/prefabs/`
 
-- [ ] **2. Patcher les stats de base de Warly**
-  - [ ] Hunger 200, supprimer hunger drain +20% — via `AddPrefabPostInit("warly", ...)`
-  - [ ] Vider les items de départ vanilla (potatoes/garlic) — on remettra le crockpot à l'étape 13
+- [x] **2. Patcher les stats de base de Warly**
+  - [x] Hunger 200, supprimer hunger drain +20% — via `AddPrefabPostInit("warly", ...)` + `if inst.components.hunger then`
+  - [x] Vider les items de départ vanilla (potatoes/garlic) — on remettra le crockpot à l'étape 13
 
-- [ ] **3. Supprimer les mécaniques vanilla**
-  - [ ] Retirer les recettes de spiced foods et les items (grindingmill, seasoningstation) de la liste Warly
-  - [ ] Supprimer le fast fire-cooking de Warly
+- [x] **3. Supprimer les mécaniques vanilla**
+  - [x] Retirer les recettes de spiced foods et les items (grindingmill, seasoningstation) de la liste Warly — via `GLOBAL.AllRecipes` (recettes : `portablespicer_item`, `portableblender_item`, `spicepack`)
+  - [x] Supprimer le fast fire-cooking de Warly — via `RemoveTag("expertchef")` dans `AddPrefabPostInit`
 
 ---
 
@@ -56,6 +56,8 @@
   - [ ] `moqueca` — ajuster recette et stats
   - [ ] `monstertartare` — ajuster stats (-20 HP / +75 faim / -20 sanity)
   - [ ] `glowberrymousse` — ajuster ingrédients (1 glowberry value + 1 fruit value), garder le `SpawnPrefab("wormlight_light_greater")` vanilla
+    - Décroissance lumière custom : 0–90% durée → rayon constant 100%, 90–100% durée → décroissance linéaire 100%→0%
+    - Implémentation : `AddPrefabPostInit("wormlight_light_fx_greater", ...)` côté client (le rayon est géré client-side dans `OnUpdateLight`)
   - [ ] `bonesoup` → bone bouillon — ajuster stats (+32 HP / +150 faim / +5 sanity)
   - [ ] `nightmarepie` → grim galette — changer ingrédients (2 nightmare fuels + 1 vegetable value), garder l'`oneatenfn` de swap HP↔Sanité
   - [ ] `frogfishbowl` → fish cordon bleu — garder `AddDebuff("buff_moistureimmunity")`, ajuster stats

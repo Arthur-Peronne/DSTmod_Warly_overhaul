@@ -34,3 +34,34 @@
 - `all_clients_require_mod = true` est nécessaire car les clients doivent connaître les recettes et stats modifiées pour éviter les désynchronisations
 - Les scripts vanilla DST sont consultables dans `Ressources/dst_scripts/` (non trackés git)
 - Prochaine étape : **Phase 1.2** — patcher Hunger 200 et supprimer hunger drain via `AddPrefabPostInit("warly", ...)`
+
+---
+
+## Session 2 — 2026-06-23
+
+### Ce qui a été fait
+
+**Phase 1 complète et testée en jeu :**
+- Stats Warly : hunger max 200, rate Wilson, inventaire de départ vide
+- Tags supprimés : `expertchef` (fast fire-cooking), `professionalchef` (crafting épices)
+- Recettes désactivées : `portablespicer_item`, `portableblender_item`, `spicepack` via `GLOBAL.AllRecipes`
+- Setup workflow : copie directe (symlinks non supportés sur Linux), alias `sync-warly` avec rsync
+
+**Infrastructure de test établie :**
+- Console LOCAL : entité client, pas de composants gameplay, `print()` affiché à l'écran
+- Console REMOTE : entité serveur, composants disponibles, utiliser `c_announce()` pour afficher à l'écran
+
+### Leçons de debugging critiques (voir TECHNICAL.md pour le détail)
+
+- `AddPrefabPostInit("warly", fn)` fire à la sélection du personnage (TheWorld nil) et **une seule fois** — ne pas retourner trop tôt
+- Pattern correct : pas de guard pour `RemoveTag` et `starting_inventory`, guard `if inst.components.hunger then` pour les composants
+- `AddComponentPostInit` fire avant la fin du prefab → le vanilla peut écraser les valeurs → préférer `AddPrefabPostInit` pour `SetMax`
+- `GetValidRecipe()` n'existe pas → utiliser `GLOBAL.AllRecipes["nom"]`
+- Noms exacts des recettes spices : `portableblender_item` (pas `portableblender`), `portablespicer_item`, `spicepack`
+
+### Prochaine étape
+
+**Phase 2** — Mémoire alimentaire FIFO :
+1. `scripts/warly_config.lua` — constantes (seuils jours, valeurs N, malus, liste plats exclusifs)
+2. `scripts/components/warly_foodmemory.lua` — queue FIFO, `RememberFood`, `GetOccurrences`, `GetMultiplier`, `OnSave`/`OnLoad`
+3. Branchement sur Warly via `AddPrefabPostInit` + `eater.custom_stats_mod_fn`
