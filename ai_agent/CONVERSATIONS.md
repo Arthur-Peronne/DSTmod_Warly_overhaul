@@ -65,3 +65,33 @@
 1. `scripts/warly_config.lua` — constantes (seuils jours, valeurs N, malus, liste plats exclusifs)
 2. `scripts/components/warly_foodmemory.lua` — queue FIFO, `RememberFood`, `GetOccurrences`, `GetMultiplier`, `OnSave`/`OnLoad`
 3. Branchement sur Warly via `AddPrefabPostInit` + `eater.custom_stats_mod_fn`
+
+---
+
+## Session 3 — 2026-06-24
+
+### Ce qui a été fait
+
+**Phase 2 complète et testée en jeu :**
+
+- `scripts/warly_config.lua` — constantes FIFO (seuils 35/70 jours, N 2/3/4, malus 0.25, liste 15 plats exclusifs avec noms vanilla pour les plats modifiés)
+- `scripts/components/warly_foodmemory.lua` — queue FIFO avec `GetMemorySize` (dynamique via `TheWorld.state.cycles`), `RememberFood`, `GetOccurrences`, `GetMultiplier`, `OnSave`/`OnLoad`
+- Branchement dans `modmain.lua` :
+  - `foodmemory` vanilla patché en proxy (`GetFoodMultiplier → 1`, `GetMemoryCount → notre queue`, `RememberFood → no-op`) plutôt que supprimé — nécessaire pour que `wisecracker.lua` trouve le composant
+  - `custom_stats_mod_fn` branché sur `warly_foodmemory:GetMultiplier`
+  - `oneat` listener : enregistre le repas + override les speeches SAME_OLD
+
+**Speeches liés aux occurrences :**
+- Wisecracker réutilisé comme base (fire en premier), notre listener l'override
+- Table de correspondance occ → SAME_OLD_1/2/4/5 (SAME_OLD_3 skippé volontairement)
+- `GetOccurrences` lu **avant** `RememberFood` pour avoir le count pré-repas
+
+### Leçons de debugging
+
+- `GetString()` n'est pas disponible directement dans le sandbox mod → utiliser `GLOBAL.GetString()`
+- Les `ListenForEvent` enregistrés dans `AddPrefabPostInit` firen **après** ceux enregistrés dans les composants vanilla (ordre d'enregistrement) → notre talker:Say() override naturellement wisecracker
+- `wisecracker.lua` utilise `foodmemory:GetMemoryCount()` pour les speeches → si `foodmemory` est nil (supprimé), count=0 et Warly dit toujours TASTY
+
+### Prochaine étape
+
+**Phase 3** — Widget HUD sous la jauge de faim (affichage des N derniers repas + multiplicateur)

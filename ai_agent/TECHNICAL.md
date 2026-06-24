@@ -67,6 +67,18 @@ Ces deux opérations ne nécessitent pas `TheWorld` — elles modifient directem
 "spicepack"             -- sac à dos pour épices
 ```
 
+### `GetString` et le sandbox mod
+
+`GetString(inst, key1, key2)` est une fonction du moteur DST qui cherche les strings de personnage dans `STRINGS.CHARACTERS`. Elle n'est **pas importée automatiquement** dans le sandbox de `modmain.lua`.
+
+→ Dans les closures de `modmain.lua` (callbacks `AddPrefabPostInit`, listeners `ListenForEvent`...), utiliser **`GLOBAL.GetString(...)`** et non `GetString(...)`.
+
+Les tables globales simples comme `TUNING`, `STRINGS`, `FOODTYPE` sont accessibles directement. Les fonctions comme `GetString` nécessitent le préfixe `GLOBAL.`.
+
+### `require("warly_config")` dans les composants custom
+
+Quand DST charge un composant via `inst:AddComponent("warly_foodmemory")`, il exécute `scripts/components/warly_foodmemory.lua` dans l'**environnement global du jeu** (pas le sandbox mod). Un `require("warly_config")` dans ce fichier cherche `scripts/warly_config.lua` dans le dossier mod et l'exécute dans l'env global du jeu. `WARLY_CONFIG = { ... }` défini sans `local` devient alors un global jeu accessible depuis partout.
+
 ### Debug console en jeu
 
 | Mode | `ThePlayer` | Composants | Output `print()` |
@@ -119,7 +131,23 @@ Workflow : modifier le code → `sync-warly` → recharger le monde (`Ctrl+L` ou
 - Build `swap_chefpack` — même visuel que notre futur Chef Pouch
 - → Ce prefab est la base à étudier pour implémenter le Chef Pouch (tâche 12)
 
-### 6. `scripts/spicedfoods.lua`
+### 6. `scripts/components/wisecracker.lua`
+- Composant qui gère **tous les dialogues automatiques** de Warly (et des autres personnages)
+- Branche un listener `oneat` qui choisit le speech selon l'état du plat :
+  - `foodmemory:GetMemoryCount(prefab) > 0` → `SAME_OLD_N` (N = count, min(5, count))
+  - sinon + `masterchef` tag → `TASTY` (masterfood), `PREPARED`, `RAW`, `DRIED`, ou `COOKED`
+- Si `foodmemory` est nil (composant supprimé), count vaut toujours 0 → Warly dit toujours TASTY/PREPARED, jamais SAME_OLD
+- **Pattern proxy** : plutôt que supprimer `foodmemory`, patcher ses méthodes directement sur l'instance pour rediriger vers notre composant :
+  ```lua
+  inst.components.foodmemory.GetMemoryCount = function(self, prefab)
+      return inst.components.warly_foodmemory:GetOccurrences(prefab)
+  end
+  inst.components.foodmemory.GetFoodMultiplier = function(self, prefab) return 1 end
+  inst.components.foodmemory.RememberFood = function(self, prefab) end
+  ```
+- **Ordre des listeners `oneat`** : wisecracker s'enregistre pendant `master_postinit`, notre listener dans `AddPrefabPostInit` → notre listener fire **après** wisecracker → `talker:Say()` dans notre listener écrase naturellement le speech de wisecracker
+
+### 7. `scripts/spicedfoods.lua`
 - Contient les buffs du système d'assaisonnement réutilisables :
   - `buff_workeffectiveness` (sucre/honey crystals → Sweet smoothie)
   - `buff_attack` (chili → Spiky salad)

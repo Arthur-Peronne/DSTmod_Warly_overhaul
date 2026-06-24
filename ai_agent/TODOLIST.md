@@ -17,18 +17,19 @@
 
 ## Phase 2 — Mémoire alimentaire FIFO
 
-- [ ] **4. `scripts/warly_config.lua`**
-  - [ ] Constantes : seuils jours (35, 70), valeurs N (2/3/4), malus (0.25 par occurrence)
-  - [ ] Liste des plats exclusifs (pour le bonus +15 faim plus tard)
+- [x] **4. `scripts/warly_config.lua`**
+  - [x] Constantes : seuils jours (35, 70), valeurs N (2/3/4), malus (0.25 par occurrence)
+  - [x] Liste des plats exclusifs (pour le bonus +15 faim plus tard)
 
-- [ ] **5. `scripts/components/warly_foodmemory.lua`**
-  - [ ] Queue FIFO de taille N, `RememberFood`, `GetOccurrences`, `GetMultiplier`
-  - [ ] N dynamique selon `TheWorld.state.cycles`
-  - [ ] `OnSave` / `OnLoad`
+- [x] **5. `scripts/components/warly_foodmemory.lua`**
+  - [x] Queue FIFO de taille N, `RememberFood`, `GetOccurrences`, `GetMultiplier`
+  - [x] N dynamique selon `TheWorld.state.cycles`
+  - [x] `OnSave` / `OnLoad`
 
-- [ ] **6. Branchement sur Warly**
-  - [ ] `AddPrefabPostInit("warly", ...)` : remplacer le composant `foodmemory` vanilla par le nôtre
-  - [ ] Brancher le multiplier via `eater.custom_stats_mod_fn`
+- [x] **6. Branchement sur Warly**
+  - [x] `AddPrefabPostInit("warly", ...)` : patcher `foodmemory` vanilla en proxy (GetFoodMultiplier → 1, GetMemoryCount → notre queue, RememberFood → no-op)
+  - [x] Brancher le multiplier via `eater.custom_stats_mod_fn`
+  - [x] Speeches liés aux occurrences : override des SAME_OLD via `oneat` listener (SAME_OLD_1/2/4/5 → mult 0.75/0.5/0.25/0.0) — `GLOBAL.GetString` requis dans le sandbox mod
 
 ---
 
@@ -104,6 +105,8 @@
 ## Phase 8 — Dialogues de Warly
 
 - [ ] **16. Modifier les phrases de Warly**
-  - [ ] Phrases sur les plats (plats exclusifs, plats vanilla, plats refusés)
+  - [x] ~~Phrases sur les plats vanilla~~ (SAME_OLD liés aux occurrences — fait en Phase 2)
+  - [ ] Phrases sur les plats exclusifs (speech positif à la première dégustation)
+  - [ ] Phrases sur les plats refusés (message spécifique au refus dur — Phase 4)
   - [ ] Phrases sur les objets (Portable Crock Pot, Chef Pouch)
-  - [ ] Phrases sur les situations / faim (mémoire alimentaire, refus de manger, faim critique)
+  - [ ] Phrases sur les situations / faim (faim critique)
