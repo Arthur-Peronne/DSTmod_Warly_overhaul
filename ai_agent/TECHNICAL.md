@@ -67,6 +67,24 @@ Ces deux opérations ne nécessitent pas `TheWorld` — elles modifient directem
 "spicepack"             -- sac à dos pour épices
 ```
 
+### Refus de manger : `PrefersToEat` vs `Eat`
+
+**Ne pas** hooker `Eat()` pour refuser un aliment. `Eat()` est appelé **pendant** l'animation d'eat (depuis `ACTIONS.EAT.fn`) — à ce stade l'animation a déjà démarré et le son joue. Retourner nil depuis `Eat()` arrête la consommation mais laisse l'animation se terminer, puis déclenche ACTIONFAIL ("I cannot do that").
+
+**Pattern correct** : hooker `PrefersToEat()`. SGwilson l'appelle dans son ActionHandler **avant** de décider quelle animation lancer :
+
+```lua
+-- SGwilson.lua ligne 1168
+if not inst.components.eater:PrefersToEat(obj) then
+    inst:PushEvent("wonteatfood", { food = obj })
+    return  -- jamais d'animation d'eat
+end
+```
+
+→ `PrefersToEat` retourne false → `wonteatfood` pushé → `GoToState("refuseeat")` → animation de refus correcte, pas de son, pas d'ACTIONFAIL.
+
+Pour le speech de refus : écouter l'event `"wonteatfood"` avec un guard sur `GetMultiplier == 0` (pour ne parler que lors d'un refus mémoire, pas d'un refus diète).
+
 ### `GetString` et le sandbox mod
 
 `GetString(inst, key1, key2)` est une fonction du moteur DST qui cherche les strings de personnage dans `STRINGS.CHARACTERS`. Elle n'est **pas importée automatiquement** dans le sandbox de `modmain.lua`.

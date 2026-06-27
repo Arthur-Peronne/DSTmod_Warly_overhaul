@@ -28,6 +28,30 @@ AddPrefabPostInit("warly", function(inst)
             return hp * mult, hunger * mult, sanity * mult
         end
 
+        -- Refuse to eat if the food multiplier is 0 (4 occurrences in queue)
+        local original_prefers = inst.components.eater.PrefersToEat
+        inst.components.eater.PrefersToEat = function(self, food)
+            if food ~= nil
+                and not food:HasTag("potion")
+                and inst.components.warly_foodmemory ~= nil
+                and inst.components.warly_foodmemory:GetMultiplier(food.prefab) == 0
+            then
+                return false
+            end
+            return original_prefers(self, food)
+        end
+
+        -- Say SAME_OLD_5 only when the refusal is due to memory saturation
+        inst:ListenForEvent("wonteatfood", function(i, data)
+            if data.food ~= nil
+                and inst.components.warly_foodmemory ~= nil
+                and inst.components.warly_foodmemory:GetMultiplier(data.food.prefab) == 0
+                and i.components.talker ~= nil
+            then
+                i.components.talker:Say(GLOBAL.GetString(i, "ANNOUNCE_EAT", "SAME_OLD_5"))
+            end
+        end)
+
         -- Save dish after every meal
         inst:ListenForEvent("oneat", function(i, data)
             if data.food ~= nil and not data.food:HasTag("potion") then

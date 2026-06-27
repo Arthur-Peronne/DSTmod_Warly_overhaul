@@ -95,3 +95,33 @@
 ### Prochaine étape
 
 **Phase 3** — Widget HUD sous la jauge de faim (affichage des N derniers repas + multiplicateur)
+
+---
+
+## Session 4 — 2026-06-27
+
+### Ce qui a été fait
+
+**Modifications des specs avant de continuer :**
+- TODOLIST restructurée : refus de manger déplacé de Phase 4 → fin de Phase 2 (étape 7), HUD devient étape 8, phases renommées (5→4, 6→5, 7→6, 8→7)
+- CONTENT.md : multiplicateurs passés de formule (-25% par occurrence) à **valeurs fixes configurables** ; option x1.5 durée des buffs ajoutée ; option "damage bonus additif/multiplicatif" supprimée
+- `warly_config.lua` : `PENALTY_PER_OCCURRENCE = 0.25` → `MULTIPLIERS = { 0.75, 0.50, 0.25, 0.00 }` + `BUFF_DURATION_BONUS = 1.5`
+- `warly_foodmemory.lua` : `GetMultiplier` mis à jour pour lire `WARLY_CONFIG.MULTIPLIERS[occ]` au lieu de calculer
+
+**`ai_agent/DEBUG.md` créé** — procédure complète de debug : workflow sync-warly, commandes console, vérification de la food memory, protocole de test des multiplicateurs.
+
+**Étape 7 — Refus de manger (Phase 2) :**
+- Première tentative : override de `Eat()` → incorrect : l'animation d'eat et le son jouent déjà quand `Eat()` est appelé ; ACTIONFAIL déclenche "I cannot do that"
+- Solution finale : override de `PrefersToEat()` — SGwilson vérifie cette méthode **avant** de lancer l'animation. Si false → `wonteatfood` pushé → `GoToState("refuseeat")` → animation et son corrects, pas d'ACTIONFAIL
+- Speech de refus (SAME_OLD_5 = "Enough already!") géré via `ListenForEvent("wonteatfood")` avec guard `GetMultiplier == 0`
+
+### Leçons de debugging
+
+- `Eat()` est appelé pendant l'animation d'eat → trop tard pour changer l'animation ou empêcher le son
+- `PrefersToEat()` est le bon point d'accroche pour le refus : intercepté par SGwilson AVANT toute animation
+- `wonteatfood` event → `GoToState("refuseeat")` : mécanisme identique à Wigfrid refusant un plat non-diététique
+- ACTIONFAIL ("I cannot do that") se déclenche quand `Eat()` retourne nil — évité en hookant `PrefersToEat` plutôt que `Eat`
+
+### Prochaine étape
+
+**Phase 3** — Widget HUD sous la jauge de faim (affichage des N derniers repas + multiplicateur)

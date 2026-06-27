@@ -31,11 +31,15 @@
   - [x] Brancher le multiplier via `eater.custom_stats_mod_fn`
   - [x] Speeches liés aux occurrences : override des SAME_OLD via `oneat` listener (SAME_OLD_1/2/4/5 → mult 0.75/0.5/0.25/0.0) — `GLOBAL.GetString` requis dans le sandbox mod
 
+- [x] **7. Hook sur `Eater:Eat` au niveau instance**
+  - [x] Si `GetMultiplier == 0` : retourner false sans consommer + message de refus
+  - [x] Override `PrefersToEat` (pas `Eat`) + listener `wonteatfood` pour le speech SAME_OLD_5
+
 ---
 
 ## Phase 3 — Affichage HUD mémoire
 
-- [ ] **7. Widget HUD sous la jauge de faim**
+- [ ] **8. Widget HUD sous la jauge de faim**
   - [ ] Affiche les N derniers repas (icônes ou noms) avec le multiplicateur résultant
   - [ ] Option ON/OFF dans les paramètres du mod (configurable dans `modinfo.lua`)
 
@@ -43,14 +47,7 @@
 
 ---
 
-## Phase 4 — Refus de manger
-
-- [ ] **8. Hook sur `Eater:Eat` au niveau instance**
-  - [ ] Si `GetMultiplier == 0` : retourner false sans consommer + message de refus
-
----
-
-## Phase 5 — Plats exclusifs
+## Phase 4 — Plats exclusifs
 
 - [ ] **9. Modifier les plats vanilla existants** (via override dans modmain)
   - [ ] Implémenter la restriction "cuisinables par Warly uniquement" sur tous les plats exclusifs (tâches 9 et 10)
@@ -80,7 +77,7 @@
 
 ---
 
-## Phase 6 — Items spéciaux
+## Phase 5 — Items spéciaux
 
 - [ ] **12. Chef Pouch**
   - [ ] Container 8 slots, spoilage x0.6, équipable uniquement par Warly
@@ -92,7 +89,7 @@
 
 ---
 
-## Phase 7 — Options du mod
+## Phase 6 — Options du mod
 
 - [ ] **14. Trainee Warly**
   - [ ] N=2 fixe, Chef Pouch en départ, bloquer les 3 plats combat
@@ -102,11 +99,11 @@
 
 ---
 
-## Phase 8 — Dialogues de Warly
+## Phase 7 — Dialogues de Warly
 
 - [ ] **16. Modifier les phrases de Warly**
   - [x] ~~Phrases sur les plats vanilla~~ (SAME_OLD liés aux occurrences — fait en Phase 2)
   - [ ] Phrases sur les plats exclusifs (speech positif à la première dégustation)
-  - [ ] Phrases sur les plats refusés (message spécifique au refus dur — Phase 4)
+  - [ ] Phrases sur les plats refusés (message spécifique au refus dur — Phase 2 étape 7)
   - [ ] Phrases sur les objets (Portable Crock Pot, Chef Pouch)
   - [ ] Phrases sur les situations / faim (faim critique)

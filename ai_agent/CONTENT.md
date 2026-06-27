@@ -27,11 +27,11 @@ Remplacement du système vanilla (fenêtre temporelle) par une queue FIFO des N 
 | 71+       | Année 2+         | 4 |
 
 **Malus :**
-- -25% d'efficacité par occurrence du plat dans la queue
+- Multiplicateurs fixes et configurables indépendamment dans les options du mod
 - 4 occurrences = 0% → **Warly refuse de manger le plat** (refus dur, sans seuil d'urgence, même en cas de famine — intentionnel)
 - Le malus s'applique à : faim, santé, sanité, et durée des buffs (réduction de la durée, pas de l'intensité)
 
-**Multiplicateurs effectifs :**
+**Multiplicateurs effectifs (valeurs par défaut, configurables) :**
 
 | Occurrences dans la queue | Multiplicateur |
 |---------------------------|----------------|
@@ -157,8 +157,13 @@ Cuisinables par Warly uniquement, sur n'importe quel crock pot.
 Permet à Wigfrid de manger les plats Veggie et à Wurt de manger les plats Meat/Fish.
 Les restrictions "Non-edible" (ingrédients) ne sont pas affectées par ce toggle.
 
-### Damage bonus additif / multiplicatif
-À implémenter dans une version future — pour compatibilité avec d'autres mods.
+### Durée des effets x1.5 (toggle ON/OFF)
+Active ou désactive le bonus de durée x1.5 sur les buffs des plats exclusifs pour Warly.
+Valeur par défaut : ON.
+
+### Multiplicateurs de mémoire (4 valeurs configurables)
+Chaque multiplicateur (1re, 2e, 3e, 4e occurrence) est réglable indépendamment.
+Valeurs par défaut : 0.75 / 0.50 / 0.25 / 0.00.
 
 ---
 
