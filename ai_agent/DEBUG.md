@@ -1,5 +1,24 @@
 # Warly Mod — Procédure de debug
 
+## 0. Fichiers de log DST
+
+```
+~/.klei/DoNotStarveTogether/client_log.txt       ← log client (widget, HUD, erreurs Lua client)
+~/.klei/DoNotStarveTogether/master_server_log.txt ← log serveur (composants, gameplay, spawns)
+~/.klei/DoNotStarveTogether/caves_server_log.txt  ← log grottes (rarement utile)
+```
+
+Les timestamps sont indépendants entre client et serveur (ils redémarrent à 0 pour chaque processus). Pour chercher les erreurs :
+
+```bash
+grep -n "error\|Error\|Lua\|Warly\|assert\|Assert" ~/.klei/DoNotStarveTogether/client_log.txt | tail -40
+grep -n "error\|Error\|Lua\|Warly\|assert\|Assert" ~/.klei/DoNotStarveTogether/master_server_log.txt | tail -40
+```
+
+> Les crashes C++ (assert failures) apparaissent dans le **client log**, pas dans le server log. Exemple : `Assert failure 'BREAKPT:' at Entity.cpp`.
+
+---
+
 ## 1. Workflow : modifier → tester
 
 ```bash

@@ -171,3 +171,180 @@ Workflow : modifier le code → `sync-warly` → recharger le monde (`Ctrl+L` ou
   - `buff_attack` (chili → Spiky salad)
   - `buff_playerabsorption` (garlic → Roasted vegetables)
 - Ces prefabs de buff sont autonomes, utilisables même après suppression du système de spices
+
+---
+
+## Séparation client/serveur DST — critique pour les widgets HUD
+
+### Contexte général
+
+En jeu DST (solo ou listen server), il y a **deux contextes Lua distincts** : serveur et client. Les mods s'exécutent dans les deux, mais les données ne sont pas automatiquement partagées.
+
+### `AddClassPostConstruct` et les widgets
+
+- `AddClassPostConstruct("widgets/statusdisplays", fn)` s'exécute dans le contexte **client**
+- `self.owner` dans le widget = entité **client** de Warly
+- L'entité client a les **replica components** (`health`, `hunger`, `sanity` via `.replica`) mais **PAS** les composants serveur (`eater`, `warly_foodmemory`...)
+- `self.owner.components.warly_foodmemory` = **nil** depuis un widget
+
+### `Ents` depuis le contexte client
+
+- `Ents` en console LOCAL (client) = `ClientEnts` (entités client, PAS serveur)
+- `GLOBAL.Ents` dans `AddClassPostConstruct` = idem
+- `pairs(GLOBAL.Ents)` n'itère que les entités client → ne trouvera jamais `warly_foodmemory`
+
+### Les deux entités Warly
+
+Il existe **deux** entités Warly dans le jeu :
+
+1. **Entité de sélection** : créée à l'écran de sélection, avant `TheWorld`. `inst.components.eater` est nil → guard `if inst.components.eater then` empêche d'ajouter `warly_foodmemory`. C'est cette entité que `self.owner.GUID` pointe côté client.
+2. **Entité de monde** : créée à l'entrée dans le monde, avec `eater` et `warly_foodmemory`. C'est celle que `ThePlayer` en console REMOTE retourne.
+
+**Diagnostic** :
+```lua
+-- LOCAL console (entité sélection, sans composant) :
+print(Ents[ThePlayer.GUID].components.warly_foodmemory)  -- nil
+
+-- REMOTE console (entité monde, avec composant) :
+c_announce(tostring(ThePlayer.components.warly_foodmemory))  -- table: 0x...
+```
+
+### Events forwardés client ↔ serveur
+
+Les events DST sont forwardés du serveur vers le client. Quand `Eater:Eat()` fire `oneat` sur l'entité serveur, l'entité client reçoit aussi l'event → `ListenForEvent("oneat", fn, self.owner)` se déclenche dans le widget.
+
+**Danger** : ne jamais exécuter d'opérations widget (`KillAllChildren`, création de widgets...) directement dans un listener `oneat`. Cela s'exécute dans la pile de `Eater:Eat()` côté serveur → crash → déconnexion.
+
+**Pattern correct** : toujours déférer avec `DoStaticTaskInTime` :
+```lua
+self.inst:ListenForEvent("oneat", function()
+    self.inst:DoStaticTaskInTime(0, function()
+        RefreshIcons()
+    end)
+end, self.owner)
+```
+
+### Synchroniser données serveur → widget client
+
+Solution DST-standard : **`net_string`**.
+
+```lua
+-- Serveur (AddPrefabPostInit) :
+inst._warly_mem_str = net_string(inst.GUID, "warly_mem_queue", "warlymemqueueupdate")
+inst._warly_mem_str:set(table.concat(queue, ","))  -- après chaque RememberFood
+
+-- Client (AddClassPostConstruct) :
+local mem_net = net_string(self.owner.GUID, "warly_mem_queue", "warlymemqueueupdate")
+local encoded = mem_net:value()  -- lire la valeur synchro
+self.inst:ListenForEvent("warlymemqueueupdate", fn, self.owner)  -- écouter les updates
+```
+
+### `net_string` — variable réseau serveur → client
+
+`net_string(guid, name, dirty_event)` crée une variable réseau synchronisée automatiquement du serveur vers le client. Elle doit être créée dans les deux contextes (serveur ET client) avec le même GUID et le même nom.
+
+**Règles critiques :**
+
+1. **`GLOBAL.net_string(...)` requis** dans le sandbox mod (comme `GLOBAL.GetString`) — `net_string` n'est pas importé automatiquement.
+
+2. **Ne pas créer le net_string en dehors du guard `eater`** dans `AddPrefabPostInit`. Ce callback s'exécute sur le client ET le serveur. Si le net_string est créé avant le guard, il est enregistré côté client dans `AddPrefabPostInit` ET dans `AddClassPostConstruct` → crash C++ :
+   ```
+   Registering duplicate lua network variable XXXXXXXX in entity warly[GUID]
+   Assert failure 'BREAKPT:' at Entity.cpp
+   ```
+   Ce crash est visible dans le **client log**, pas le server log.
+
+   **Fix** : placer `inst._warly_mem_str = GLOBAL.net_string(...)` à l'intérieur du `if inst.components.eater then` — `eater` est un composant serveur uniquement, donc le net_string n'est créé côté serveur qu'une fois.
+
+3. **Envoyer l'état initial** via `DoStaticTaskInTime(0)` après `AddComponent` pour les saves chargées (`OnLoad` a déjà peuplé la queue).
+
+4. **Pattern complet** :
+   ```lua
+   -- Serveur (dans le guard eater) :
+   inst._warly_mem_str = GLOBAL.net_string(inst.GUID, "warly_mem_queue", "warlymemqueueupdate")
+   inst:DoStaticTaskInTime(0, function()
+       inst._warly_mem_str:set(table.concat(inst.components.warly_foodmemory.queue, ","))
+   end)
+   -- Dans oneat, après RememberFood :
+   inst._warly_mem_str:set(table.concat(i.components.warly_foodmemory.queue, ","))
+
+   -- Client (dans AddClassPostConstruct) :
+   local mem_net = GLOBAL.net_string(self.owner.GUID, "warly_mem_queue", "warlymemqueueupdate")
+   -- Lire : mem_net:value() → "meatballs,wetgoop,..."
+   -- Écouter : ListenForEvent("warlymemqueueupdate", fn, self.owner)
+   ```
+
+### `GetModConfigData` dans les callbacks différés
+
+`GetModConfigData("option_name")` n'est **pas accessible** à l'intérieur d'un `DoStaticTaskInTime` ou d'un `ListenForEvent` — retourne `nil` dans ces contextes.
+
+**Pattern correct** : lire la valeur au niveau du callback parent et capturer dans une variable locale :
+```lua
+AddClassPostConstruct("widgets/statusdisplays", function(self)
+    local y_offset = GetModConfigData("hud_y_offset") or 116  -- ← ici
+
+    self.inst:DoStaticTaskInTime(0, function()
+        -- y_offset est accessible ici via closure
+        self.warly_memory:SetPosition(x, heart_pos.y - y_offset, 0)
+    end)
+end)
+```
+
+### Assets UIAnim pour les badges de style DST
+
+Le widget `Badge` vanilla (`scripts/widgets/badge.lua`) utilise :
+
+| Couche        | Bank           | Build          | Animation |
+|---------------|----------------|----------------|-----------|
+| Fond neutre   | `status_clear_bg` | `status_clear_bg` | `backing` |
+| Fond jauge    | `status_meter` | `status_meter` | `bg`      |
+| Contour doré  | `status_meter` | `status_meter` | `frame`   |
+| Jauge fill    | `status_meter` | `status_meter` | `anim`    |
+
+**Attention** : `status_meter`/`bg` n'est PAS un fond neutre — c'est l'animation de jauge vide, qui affiche un rouge sombre par défaut. Pour un fond neutre, utiliser `status_clear_bg`/`backing`.
+
+**Ordre des layers** (important) : le dernier enfant ajouté est rendu au premier plan. Pour que le contour soit visible par-dessus l'icône :
+```lua
+slot:AddChild(bg)    -- fond derrière
+slot:AddChild(icon)  -- icône au milieu
+slot:AddChild(frame) -- contour doré devant
+```
+
+### Positionnement HUD avec Combined Status
+
+Combined Status repositionne les badges (`self.heart`, `self.brain`, `self.stomach`) dans le repère local de `statusdisplays`. Les positions de TECHNICAL.md ("brain inchangé") sont incorrectes — Combined Status déplace le brain badge dans sa ligne horizontale.
+
+**Conséquence** : ancrer le widget sur `brain_pos.y` donne un résultat instable selon la configuration Combined Status.
+
+**Pattern robuste** : ancrer sur `heart_pos` uniquement, avec un offset fixe :
+```lua
+self.inst:DoStaticTaskInTime(0, function()
+    local heart_pos = self.heart:GetPosition()
+    self.warly_memory:SetPosition(heart_pos.x + 10, heart_pos.y - y_offset, 0)
+end)
+```
+Le badge santé est repositionné de façon cohérente par Combined Status (il suit toujours le bord droit des badges), ce qui donne un résultat visuellement stable dans les deux configurations.
+
+### Méthode de debug : widget invisible
+
+Toujours commencer par un élément évident avant d'ajouter de la complexité :
+
+```lua
+local Text = _require("widgets/text")
+local label = container:AddChild(Text(GLOBAL.DEFAULTFONT, 20, "HUD OK"))
+label:SetColour(1, 0, 0, 1)  -- rouge vif
+```
+
+Si le texte n'apparaît pas → problème de positionnement ou d'exécution du callback.
+Si le texte apparaît → la base fonctionne, on peut ajouter UIAnim, Image, data.
+
+### Positions de référence dans `statusdisplays`
+
+| Badge | Vanilla (x, y) | Combined Status (x, y) |
+|-------|---------------|------------------------|
+| `self.stomach` (faim) | (-40, 20) | (-62, 35) |
+| `self.brain` (sanité) | (0, -40) | inchangé |
+| `self.heart` (santé) | (40, 20) | (62, 35) |
+| `self.moisturemeter` | (0, -115) | inchangé |
+
+Pour positionner sous le badge santé sans déborder à droite : `(pos.x, pos.y - 50)` est un bon point de départ.

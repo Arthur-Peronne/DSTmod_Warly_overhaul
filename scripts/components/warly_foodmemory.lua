@@ -41,7 +41,10 @@ end
 
 function WFoodMemory:GetMultiplier(prefab)
     local occ = self:GetOccurrences(prefab)
-    return math.max(0, 1 - occ * WARLY_CONFIG.PENALTY_PER_OCCURRENCE)
+    if occ == 0 then
+        return 1
+    end
+    return WARLY_CONFIG.MULTIPLIERS[occ] or 0
 end
 
 function WFoodMemory:OnSave()

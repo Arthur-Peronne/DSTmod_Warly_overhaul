@@ -39,11 +39,29 @@
 
 ## Phase 3 — Affichage HUD mémoire
 
-- [ ] **8. Widget HUD sous la jauge de faim**
-  - [ ] Affiche les N derniers repas (icônes ou noms) avec le multiplicateur résultant
-  - [ ] Option ON/OFF dans les paramètres du mod (configurable dans `modinfo.lua`)
+- [x] **8. Widget HUD sous la jauge de faim**
 
-  > À mettre ici car c'est le principal outil de debug visuel de la mémoire — on en aura besoin pour valider toute la suite.
+  **8a. Valider la visibilité de base**
+  - [x] Widget minimaliste : `Text("HUD OK")` rouge dans `AddClassPostConstruct` pour confirmer position + exécution du callback
+  - [x] Vérifier que le widget apparaît bien sous le badge santé
+
+  **8b. Sync serveur → client (données de la queue)**
+  - [x] `net_string` côté serveur **à l'intérieur** du guard `if inst.components.eater` (GLOBAL.net_string requis)
+  - [x] Mise à jour après chaque `RememberFood` dans `oneat`
+  - [x] Envoi état initial via `DoStaticTaskInTime(0)` après `AddComponent`
+  - [x] Receiver côté client dans le widget (`GLOBAL.net_string`)
+  - [x] Validé : queue reçue correctement après chaque repas
+
+  **8c. Affichage des slots**
+  - [x] N slots avec fond `status_clear_bg`/`backing` + contour `status_meter`/`frame` + icône `Image`
+  - [x] Rafraîchir sur `warlymemqueueupdate` (déféré `DoStaticTaskInTime`)
+  - [x] Rafraîchir sur `cycleschanged`
+  - [x] Cacher en mode fantôme (`SetGhostMode`)
+  - [x] Compatibilité Combined Status : ancrage sur `heart_pos` avec offset fixe
+
+  **8d. Option mod**
+  - [x] Option position verticale HUD (`hud_y_offset`) dans `modinfo.lua` — dropdown 80→200, défaut 116
+  - [x] Option ON/OFF dans `modinfo.lua` pour afficher/cacher le widget entièrement
 
 ---
 

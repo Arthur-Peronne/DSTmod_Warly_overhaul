@@ -7,8 +7,12 @@ WARLY_CONFIG = {
     MEMORY_DAY_THRESHOLDS = { 35, 70 },
     MEMORY_SIZES          = { 2, 3, 4 },
 
-    -- Hunger efficiency penalty per occurrence in the queue
-    PENALTY_PER_OCCURRENCE = 0.25,
+    -- Hunger efficiency multipliers per occurrence (configurable)
+    -- Index = number of occurrences in the queue (1 to 4)
+    MULTIPLIERS = { 0.75, 0.50, 0.25, 0.00 },
+
+    -- Buff duration multiplier for Warly's exclusive dishes (configurable)
+    BUFF_DURATION_BONUS = 1.5,
 
     -- List of Warly's exclusive dishes (for the +15 hunger bonus)
     EXCLUSIVE_DISHES = {

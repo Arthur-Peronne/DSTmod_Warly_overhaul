@@ -125,3 +125,97 @@
 ### Prochaine étape
 
 **Phase 3** — Widget HUD sous la jauge de faim (affichage des N derniers repas + multiplicateur)
+
+---
+
+## Session 5 — 2026-06-28
+
+### Ce qui a été fait
+
+**Phase 3 — Widget HUD (en cours, non terminée) :**
+
+Deux bugs identifiés et corrigés dans le code initial :
+
+1. **Crash serveur au manger** :
+   - `oneat` fire dans la pile d'appel de `Eater:Eat()` côté serveur
+   - Appeler `KillAllChildren()` + créer des widgets depuis cette pile plantait le serveur → déconnexion
+   - Fix : envelopper `RefreshIcons()` dans `self.inst:DoStaticTaskInTime(0, fn)` dans le listener `oneat`
+
+2. **Widget hors écran** :
+   - `pos.x + 20` poussait le widget hors de l'écran (heart badge déjà proche du bord droit)
+   - Fix : `pos.x` (même x que le badge santé)
+
+**Découverte critique — séparation client/serveur DST :**
+- `AddClassPostConstruct("widgets/statusdisplays", fn)` s'exécute dans le contexte **client**
+- `self.owner` = entité **client** → `self.owner.components.warly_foodmemory` = **nil**
+- `Ents` dans le contexte client = `ClientEnts` (entités client), PAS les entités serveur
+- `GLOBAL.Ents` dans le widget = idem → `pairs(GLOBAL.Ents)` n'y trouve pas `warly_foodmemory`
+- Il existe **deux** entités Warly : une de sélection (sans `eater`, sans composant) + une de monde (avec tout)
+- `self.owner` pointe vers l'entité de sélection (sans composant)
+- Les events SONT forwardés : `oneat` se déclenche sur l'entité client quand le serveur le fire
+
+**Tentatives pour accéder aux données serveur :**
+- `self.owner.components.warly_foodmemory` → nil
+- `GLOBAL.Ents[self.owner.GUID]` → entité de sélection (sans composant)
+- `pairs(GLOBAL.Ents)` → ne contient que les entités client
+- `net_string` → tenté, résultat non confirmé
+
+**État actuel :**
+- Widget réinitialisé en version minimale (`Text("HUD OK")` rouge) pour valider la visibilité de base avant de reconstruire
+
+### Leçons de debugging
+
+- `Ents` depuis le contexte client = `ClientEnts`, pas les entités serveur — vérifiable avec `print(Ents[ThePlayer.GUID].components.warly_foodmemory)` en LOCAL console (→ nil)
+- La seule façon d'accéder aux données serveur depuis un widget = `net_string` DST ou event custom
+- Pour débugger un widget qui n'apparaît pas : commencer par un `Text` bright pour confirmer position/visibilité avant toute complexité
+
+### Prochaine étape
+
+**Phase 3 — Widget HUD (suite) :**
+1. Tester `Text("HUD OK")` pour confirmer visibilité et position du widget
+2. Si visible : reconstruire avec UIAnim + icônes
+3. Implémenter synchronisation serveur→client (à déterminer : `net_string` ou event custom)
+
+---
+
+## Session 6 — 2026-06-28 (suite)
+
+### Ce qui a été fait
+
+**Phase 3 — Widget HUD complété :**
+
+**8b — Synchronisation net_string :**
+- `GLOBAL.net_string(...)` requis (comme `GLOBAL.GetString`) — non importé dans le sandbox mod
+- Bug crash C++ : `net_string` créé DEUX FOIS sur la même entité côté client (`AddPrefabPostInit` s'exécute sur client ET serveur + `AddClassPostConstruct` crée le même net_string → `Assert failure: duplicate lua network variable`)
+- Fix : placer la création du net_string **à l'intérieur** du guard `if inst.components.eater then` (composant serveur uniquement) — le client ne crée pas le net_string dans `AddPrefabPostInit`
+- État initial envoyé via `DoStaticTaskInTime(0)` après `AddComponent` pour les saves chargées
+- Validation : `[Warly HUD] queue mise à jour : meatballs,wetgoop,wetgoop,meatballs` visible en console
+
+**8c — Affichage des slots :**
+- `status_meter`/`bg` montrait un fond rouge (jauge "vide") → remplacé par `status_clear_bg`/`backing` (fond neutre)
+- `status_meter`/`frame` donne le contour doré identique aux badges vanilla
+- Ordre des layers : `bg → icône → frame` (frame ajouté en DERNIER pour passer au premier plan)
+- Échelles finales : `SLOT_SCALE = 0.55`, `ICON_SCALE = 0.35`, `STEP = 26`
+
+**Positionnement — compatibilité Combined Status :**
+- `brain_pos.y` retourne une valeur différente avec Combined Status (badge reposé dans la ligne horizontale) → offset instable
+- Fix : ancrer sur `heart_pos` au lieu de `brain_pos` : `SetPosition(heart_pos.x + 10, heart_pos.y - y_offset, 0)`
+- Heart badge est repositionné de façon cohérente par Combined Status → l'offset absolu donne un résultat stable dans les deux configurations
+- Résultat validé : vanilla / vanilla+wetness / Combined Status / Combined Status+wetness ✓
+
+**Option mod — position verticale :**
+- `GetModConfigData("hud_y_offset")` non accessible dans `DoStaticTaskInTime` (contexte différé)
+- Fix : lire la valeur au niveau du callback `AddClassPostConstruct` et capturer dans une variable locale (closure)
+- Ajouté `configuration_options` dans `modinfo.lua` : option dropdown 80/100/116/140/160/200, défaut 116
+
+### Leçons de debugging
+
+- `GLOBAL.net_string` requis dans le sandbox mod (comme toutes les fonctions engine non importées)
+- `net_string` dupliqué → crash C++ `Assert failure 'BREAKPT:' at Entity.cpp` visible dans le **client log** (pas le server log)
+- `GetModConfigData` doit être appelé au niveau du callback parent, pas dans un `DoStaticTaskInTime` différé
+- `status_meter`/`bg` ≠ fond neutre — c'est la jauge vidée (rouge sombre). Utiliser `status_clear_bg`/`backing` pour un fond neutre
+- Combined Status repositionne le badge brain → ne pas ancrer le HUD sur `brain_pos`
+
+### Prochaine étape
+
+**Phase 4** — Plats exclusifs (modification plats vanilla existants + création nouveaux plats)

@@ -148,6 +148,10 @@ Cuisinables par Warly uniquement, sur n'importe quel crock pot.
 
 ## Options du mod
 
+### Position verticale du HUD mémoire (`hud_y_offset`)
+Décalage vertical de la colonne de slots par rapport au badge santé. Utile quand d'autres mods (Combined Status avec beaucoup d'options) ajoutent des éléments qui entrent en conflit avec la position par défaut.
+Options : 80 / 100 / 116 (défaut) / 140 / 160 / 200.
+
 ### Trainee Warly (difficulté facile)
 - **Bonus** : démarre aussi avec un Chef Pouch (en plus du Portable Crock Pot)
 - **Bonus** : N = 2 constant (pas d'évolution avec les saisons)
