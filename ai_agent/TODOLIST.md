@@ -63,11 +63,13 @@
   - [x] Option position verticale HUD (`hud_y_offset`) dans `modinfo.lua` — dropdown 80→200, défaut 116
   - [x] Option ON/OFF dans `modinfo.lua` pour afficher/cacher le widget entièrement
 
+- [x] **9. Option mémoire alimentaire**
+  - [x] N= default (2,3 ou 4 selon avancement du jeu), ou 2,3 ou 4 fixe
 ---
 
 ## Phase 4 — Plats exclusifs
 
-- [ ] **9. Modifier les plats vanilla existants** (via override dans modmain)
+- [ ] **10. Modifier les plats vanilla existants** (via override dans modmain)
   - [ ] Implémenter la restriction "cuisinables par Warly uniquement" sur tous les plats exclusifs (tâches 9 et 10)
   - [ ] `moqueca` — ajuster recette et stats
   - [ ] `monstertartare` — ajuster stats (-20 HP / +75 faim / -20 sanity)
@@ -79,7 +81,7 @@
   - [ ] `frogfishbowl` → fish cordon bleu — garder `AddDebuff("buff_moistureimmunity")`, ajuster stats
   - [ ] `gazpacho` → asparagazpacho — garder les champs `temperature`/`temperatureduration`, ajuster recette
 
-- [ ] **10. Créer les plats vraiment nouveaux** (patterns vanilla réutilisés)
+- [ ] **11. Créer les plats vraiment nouveaux** (patterns vanilla réutilisés)
   - [ ] `salted caramel crepes` — feeding, base `freshfruitcrepes` modifiée
   - [ ] `scary parmentier` — feeding, base `potatosouffle` modifiée
   - [ ] `spicy burger` — `temperature = HOT_FOOD_BONUS_TEMP` (pattern `dragonchilisalad`)
@@ -89,35 +91,28 @@
   - [ ] `roasted vegetables` — `AddDebuff("buff_playerabsorption")` (pattern spice garlic)
   - [ ] `volt goat chaud-froid` — `AddDebuff("buff_electricattack")` (pattern `voltgoatjelly`)
 
-- [ ] **11. Bonus Warly sur ses plats exclusifs**
+- [ ] **12. Bonus Warly sur ses plats exclusifs**
   - [ ] +15 faim : via `custom_stats_mod_fn` si le plat est dans la liste config
   - [ ] x1.5 durée des effets : intercepter `AddDebuff` pour allonger la durée, ou patcher le buff prefab à la volée au moment de l'`oneatenfn`
 
+- [ ] **13. Toggle plats mangeables par tous**
+  - [ ] Retirer la restriction Wigfrid/Wurt sur les plats Veggie/Meat
 ---
 
 ## Phase 5 — Items spéciaux
 
-- [ ] **12. Chef Pouch**
+- [ ] **14. Chef Pouch**
   - [ ] Container 8 slots, spoilage x0.6, équipable uniquement par Warly
+  - [ ] Option Chef Pouch en objet de départ
 
-- [ ] **13. Portable Crock Pot**
+- [ ] **15. Portable Crock Pot**
   - [ ] Vérifier ce que vanilla fournit déjà (`portablecookpot_item`)
   - [ ] Ajuster coût (3 marbles / 6 coals / 6 twigs) et cook duration (60%)
   - [ ] Remettre dans les items de départ (remplace la liste vide de l'étape 2)
 
 ---
 
-## Phase 6 — Options du mod
-
-- [ ] **14. Trainee Warly**
-  - [ ] N=2 fixe, Chef Pouch en départ, bloquer les 3 plats combat
-
-- [ ] **15. Toggle plats mangeables par tous**
-  - [ ] Retirer la restriction Wigfrid/Wurt sur les plats Veggie/Meat
-
----
-
-## Phase 7 — Dialogues de Warly
+## Phase 6 — Dialogues de Warly
 
 - [ ] **16. Modifier les phrases de Warly**
   - [x] ~~Phrases sur les plats vanilla~~ (SAME_OLD liés aux occurrences — fait en Phase 2)

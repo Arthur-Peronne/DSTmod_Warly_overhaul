@@ -152,11 +152,6 @@ Cuisinables par Warly uniquement, sur n'importe quel crock pot.
 Décalage vertical de la colonne de slots par rapport au badge santé. Utile quand d'autres mods (Combined Status avec beaucoup d'options) ajoutent des éléments qui entrent en conflit avec la position par défaut.
 Options : 80 / 100 / 116 (défaut) / 140 / 160 / 200.
 
-### Trainee Warly (difficulté facile)
-- **Bonus** : démarre aussi avec un Chef Pouch (en plus du Portable Crock Pot)
-- **Bonus** : N = 2 constant (pas d'évolution avec les saisons)
-- **Malus** : ne peut pas cuisiner les plats combat : Spiky salad, Roasted vegetables, Volt goat chaud-froid
-
 ### Plats mangeables par tous (toggle ON/OFF)
 Permet à Wigfrid de manger les plats Veggie et à Wurt de manger les plats Meat/Fish.
 Les restrictions "Non-edible" (ingrédients) ne sont pas affectées par ce toggle.
@@ -165,9 +160,16 @@ Les restrictions "Non-edible" (ingrédients) ne sont pas affectées par ce toggl
 Active ou désactive le bonus de durée x1.5 sur les buffs des plats exclusifs pour Warly.
 Valeur par défaut : ON.
 
+### Taille de la mémoire alimentaire (4 valeurs configurables)
+Si default, on continue comme le mod habituel (2 au départ, puis 3 jour 36, puis 4 jour 71). Sinon, valeur fixe tout au long du jeu.
+Valeurs par défaut : default, 2, 3, 4
+
 ### Multiplicateurs de mémoire (4 valeurs configurables)
 Chaque multiplicateur (1re, 2e, 3e, 4e occurrence) est réglable indépendamment.
 Valeurs par défaut : 0.75 / 0.50 / 0.25 / 0.00.
+
+### Chef Pouch au départ (toggle ON/OFF)
+Par defaut OFF 
 
 ---
 

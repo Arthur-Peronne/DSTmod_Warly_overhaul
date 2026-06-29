@@ -1,5 +1,7 @@
 print("[Warly Overhaul] modmain.lua loaded")
 
+GLOBAL.WARLY_MEMORY_SIZE_OPTION = GetModConfigData("memory_size")
+
 local _require = GLOBAL.require
 
 AddPrefabPostInit("warly", function(inst)
@@ -11,6 +13,10 @@ AddPrefabPostInit("warly", function(inst)
     if inst.components.hunger then
         inst.components.hunger:SetMax(200)
         inst.components.hunger:SetRate(TUNING.WILSON_HUNGER_RATE)
+    end
+
+    if inst.components.sanity then
+        inst.components.sanity:SetMax(150)
     end
 
     -- === PHASE 2 : FIFO food memory===
@@ -120,6 +126,7 @@ AddClassPostConstruct("widgets/statusdisplays", function(self)
     if not GetModConfigData("show_hud") then return end
 
     local y_offset = GetModConfigData("hud_y_offset") or 116  -- ← ici, pas dans le DoStaticTaskInTime
+    local mem_size_opt = GetModConfigData("memory_size")
 
     local Widget = _require("widgets/widget")
     local Image  = _require("widgets/image")
@@ -134,6 +141,7 @@ AddClassPostConstruct("widgets/statusdisplays", function(self)
     local STEP       = 40
 
     local function RefreshIcons()
+
         self.warly_memory:KillAllChildren()
 
         local encoded = mem_net:value()
@@ -145,7 +153,9 @@ AddClassPostConstruct("widgets/statusdisplays", function(self)
         end
 
         local N = 2
-        if GLOBAL.TheWorld and GLOBAL.TheWorld.state then
+        if mem_size_opt ~= nil and mem_size_opt ~= "default" then
+            N = mem_size_opt
+        elseif GLOBAL.TheWorld and GLOBAL.TheWorld.state then
             local cycles = GLOBAL.TheWorld.state.cycles
             if cycles >= 70 then N = 4
             elseif cycles >= 35 then N = 3 end

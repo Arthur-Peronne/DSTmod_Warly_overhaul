@@ -6,6 +6,10 @@ local WFoodMemory = Class(function(self, inst)
 end)
 
 function WFoodMemory:GetMemorySize()
+    local opt = WARLY_MEMORY_SIZE_OPTION
+    if opt ~= nil and opt ~= "default" then
+        return opt
+    end
     if TheWorld == nil or TheWorld.state == nil then
         return WARLY_CONFIG.MEMORY_SIZES[1]
     end

@@ -219,3 +219,32 @@ Deux bugs identifiés et corrigés dans le code initial :
 ### Prochaine étape
 
 **Phase 4** — Plats exclusifs (modification plats vanilla existants + création nouveaux plats)
+
+---
+
+## Session 7 — 2026-06-29
+
+### Ce qui a été fait
+
+**Restructuration du design (modifications utilisateur) :**
+- "Trainee Warly" supprimé — remplacé par des options individuelles configurables
+- CONTENT.md et TODOLIST mis à jour : option taille mémoire (default/fixe 2-3-4), option Chef Pouch au départ (OFF par défaut), plats combat sans restriction
+- Option "toggle plats mangeables par tous" déplacée en Phase 4 (testée avec les plats)
+
+**Étape 9 — Option mémoire alimentaire :**
+- `modinfo.lua` : ajout option `memory_size` (Default 2→3→4 / Fixed 2 / Fixed 3 / Fixed 4)
+- `modmain.lua` : `GLOBAL.WARLY_MEMORY_SIZE_OPTION = GetModConfigData("memory_size")` en top level — expose l'option au composant via l'env global du jeu
+- `warly_foodmemory.lua` : `GetMemorySize()` lit `WARLY_MEMORY_SIZE_OPTION` en priorité, court-circuite le calcul dynamique si valeur fixe
+- Widget `RefreshIcons()` : `mem_size_opt` capturé en closure au niveau `AddClassPostConstruct` (même pattern que `y_offset`)
+
+**Correctif oublié Phase 1 — Sanité max 150 :**
+- `AddPrefabPostInit("warly", ...)` : ajout `if inst.components.sanity then inst.components.sanity:SetMax(150) end`
+
+### Leçons de debugging
+
+- `TheWorld.state.cycles = X` est assignable directement pour tester `GetMemorySize()`, mais ne déclenche pas `cycleschanged` — le widget ne se rafraîchit pas
+- Il n'existe pas de `c_skip` négatif dans DST
+
+### Prochaine étape
+
+**Phase 4** — Étape 10 : restriction "Warly uniquement" sur les plats exclusifs, puis modification des plats vanilla existants

@@ -17,6 +17,17 @@ icon = nil
 
 configuration_options = {
     {
+        name    = "memory_size",
+        label   = "Food Memory Size",
+        options = {
+            {description = "Default (2/3/4)", data = "default"},
+            {description = "Fixed: 2",        data = 2},
+            {description = "Fixed: 3",        data = 3},
+            {description = "Fixed: 4",        data = 4},
+        },
+        default = "default",
+    },
+    {
     name    = "show_hud",
     label   = "Food Memory HUD",
     options = {
