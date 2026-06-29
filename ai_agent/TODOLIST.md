@@ -70,8 +70,8 @@
 ## Phase 4 — Plats exclusifs
 
 - [ ] **10. Modifier les plats vanilla existants** (via override dans modmain)
-  - [ ] Implémenter la restriction "cuisinables par Warly uniquement" sur tous les plats exclusifs (tâches 9 et 10)
-  - [ ] `moqueca` — ajuster recette et stats
+  - [x] Implémenter la restriction "cuisinables par Warly uniquement" sur tous les plats exclusifs (tâches 9 et 10)
+  - [x] `moqueca` — ajuster recette et stats
   - [ ] `monstertartare` — ajuster stats (-20 HP / +75 faim / -20 sanity)
   - [ ] `glowberrymousse` — ajuster ingrédients (1 glowberry value + 1 fruit value), garder le `SpawnPrefab("wormlight_light_greater")` vanilla
     - Décroissance lumière custom : 0–90% durée → rayon constant 100%, 90–100% durée → décroissance linéaire 100%→0%

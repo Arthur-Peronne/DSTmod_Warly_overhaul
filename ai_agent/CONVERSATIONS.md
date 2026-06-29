@@ -248,3 +248,41 @@ Deux bugs identifiés et corrigés dans le code initial :
 ### Prochaine étape
 
 **Phase 4** — Étape 10 : restriction "Warly uniquement" sur les plats exclusifs, puis modification des plats vanilla existants
+
+---
+
+## Session 8 — 2026-06-29 (suite)
+
+### Ce qui a été fait
+
+**Analyse du mécanisme vanilla de restriction des plats Warly :**
+- Les plats Warly vanilla sont enregistrés uniquement sur `portablecookpot` (pas `cookpot`)
+- Seul Warly peut déployer le portablecookpot (`restrictedtag = "masterchef"` dans `portablecookpot.lua`)
+- `masterchef` est utilisé pour les speeches (wisecracker), pas pour un filtre de cuisson
+- Notre mod veut les plats sur n'importe quel crock pot → restriction explicite nécessaire
+
+**Étape 10 — Restriction Warly uniquement (mécanisme) :**
+- `cooker` dans `test(cooker, names, tags)` est une **string** (nom du prefab), pas une entité → pas d'accès à la position
+- Solution : hook sur `Stewer:StartCooking(doer)` via `AddComponentPostInit("stewer", ...)` pour capturer le joueur dans `GLOBAL.WARLY_CURRENT_CHEF` avant que `CalculateRecipe` soit appelé
+- `strict.lua` interdit d'assigner à une variable globale non déclarée depuis une fonction Lua → pré-déclarer avec `GLOBAL.WARLY_CURRENT_CHEF = nil` au top-level de modmain.lua
+- Wrapper `warly_only(test_fn)` : lit `GLOBAL.WARLY_CURRENT_CHEF`, vérifie le tag `masterchef`, puis délègue
+
+**Étape 10 — Moqueca (premier plat) :**
+- Recette définie avec `warly_only` + stats modifiées (hunger 112.5 → 90)
+- `GLOBAL.FOODTYPE` requis (pas exposé directement dans le sandbox, contrairement à `TUNING`)
+- `AddCookerRecipe` est une fonction mod API directe (sans `GLOBAL.`)
+- Bug icone : `AddCookerRecipe` enregistre le plat dans `mod.cookerrecipes` → `IsModCookingProduct` retourne `true` → le jeu cherche un build `"moqueca"` inexistant → pas d'icone
+- Fix icone : assignation directe dans `cooking.recipes["cookpot"]["moqueca"] = recipe` via `_require("cooking")` — bypass du tracking mod
+- Bug stats : les stats du prefab viennent de la closure dans `preparedfoods.lua` (lit `preparedfoods_warly.lua` vanilla) → `AddCookerRecipe` ne change pas les stats du prefab
+- Fix stats : `AddPrefabPostInit("moqueca", function(inst) inst.components.edible.hungervalue = 90 end)`
+
+### Leçons de debugging
+
+- `strict.lua` : `__newindex` autorise les assignations depuis un "main chunk" mais bloque depuis les fonctions Lua → pré-déclarer les globaux de runtime au top-level de modmain.lua
+- `FOODTYPE` → `GLOBAL.FOODTYPE` ; `AddCookerRecipe` → direct (mod API) ; `TUNING` → direct
+- `IsModCookingProduct` : tout plat passé par `AddCookerRecipe` depuis un mod est considéré "mod food" → build lookup cassé pour les plats vanilla → utiliser `cooking.recipes[cooker][name] = recipe` à la place
+- Les stats d'un prefab de nourriture (`edible.hungervalue` etc.) viennent d'une closure dans `preparedfoods.lua`, pas de la table recipe → seul `AddPrefabPostInit` peut les modifier
+
+### Prochaine étape
+
+**Phase 4 — Étape 10 (suite)** : appliquer le même pattern aux 6 plats vanilla restants (monstertartare, glowberrymousse, bonesoup, nightmarepie, frogfishbowl, gazpacho)

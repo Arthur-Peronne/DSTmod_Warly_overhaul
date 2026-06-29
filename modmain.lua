@@ -1,6 +1,7 @@
 print("[Warly Overhaul] modmain.lua loaded")
 
 GLOBAL.WARLY_MEMORY_SIZE_OPTION = GetModConfigData("memory_size")
+GLOBAL.WARLY_CURRENT_CHEF = nil
 
 local _require = GLOBAL.require
 
@@ -222,3 +223,54 @@ AddClassPostConstruct("widgets/statusdisplays", function(self)
         end
     end
 end)
+
+-- === PHASE 4 : Plats exclusifs ===
+
+AddComponentPostInit("stewer", function(self)
+    local orig = self.StartCooking
+    self.StartCooking = function(stewer, doer, ...)
+        GLOBAL.WARLY_CURRENT_CHEF = doer
+        orig(stewer, doer, ...)
+        GLOBAL.WARLY_CURRENT_CHEF = nil
+    end
+end)
+
+local function warly_only(test_fn)
+    return function(cooker, names, tags)
+        local chef = GLOBAL.WARLY_CURRENT_CHEF
+        if chef == nil or not chef:HasTag("masterchef") then
+            return false
+        end
+        return test_fn(cooker, names, tags)
+    end
+end
+
+local moqueca = {
+    name = "moqueca",
+    test = warly_only(function(cooker, names, tags)
+        return tags.fish and (names.onion or names.onion_cooked)
+            and (names.tomato or names.tomato_cooked) and not tags.inedible
+    end),
+    priority = 30,
+    foodtype = GLOBAL.FOODTYPE.MEAT,
+    health  = TUNING.HEALING_HUGE,    -- 60
+    hunger  = 90,
+    sanity  = TUNING.SANITY_LARGE,    -- 33
+    perishtime = TUNING.PERISH_FASTISH,
+    cooktime = 2,
+    potlevel = "low",
+    weight = 1,
+    tags = {"masterfood"},
+    cookbook_category = "portablecookpot",
+}
+
+AddPrefabPostInit("moqueca", function(inst)
+    if inst.components.edible then
+        inst.components.edible.hungervalue = 90
+    end
+end)
+
+local cooking = _require("cooking")
+cooking.recipes["cookpot"] = cooking.recipes["cookpot"] or {}
+cooking.recipes["cookpot"]["moqueca"] = moqueca
+cooking.recipes["portablecookpot"]["moqueca"] = moqueca

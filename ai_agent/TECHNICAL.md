@@ -348,3 +348,97 @@ Si le texte apparaît → la base fonctionne, on peut ajouter UIAnim, Image, dat
 | `self.moisturemeter` | (0, -115) | inchangé |
 
 Pour positionner sous le badge santé sans déborder à droite : `(pos.x, pos.y - 50)` est un bon point de départ.
+
+---
+
+## Leçons apprises en Phase 4 (plats exclusifs)
+
+### Restriction "Warly uniquement" via le stewer
+
+Le paramètre `cooker` dans `test(cooker, names, tags)` est une **string** (nom du prefab du crock pot, ex : `"cookpot"`), pas l'entité. Il est impossible d'appeler des méthodes dessus.
+
+Source : `stewer.lua` ligne 147 :
+```lua
+self.product, cooktime = cooking.CalculateRecipe(self.inst.prefab, self.ingredient_prefabs)
+```
+
+**Pattern correct** : hook sur `Stewer:StartCooking(doer)` pour capturer le joueur dans un global avant que `CalculateRecipe` soit appelé :
+
+```lua
+-- Pré-déclarer au top-level (strict.lua interdit l'assignation depuis une fn Lua)
+GLOBAL.WARLY_CURRENT_CHEF = nil
+
+AddComponentPostInit("stewer", function(self)
+    local orig = self.StartCooking
+    self.StartCooking = function(stewer, doer, ...)
+        GLOBAL.WARLY_CURRENT_CHEF = doer
+        orig(stewer, doer, ...)
+        GLOBAL.WARLY_CURRENT_CHEF = nil
+    end
+end)
+
+local function warly_only(test_fn)
+    return function(cooker, names, tags)
+        local chef = GLOBAL.WARLY_CURRENT_CHEF
+        if chef == nil or not chef:HasTag("masterchef") then return false end
+        return test_fn(cooker, names, tags)
+    end
+end
+```
+
+### `strict.lua` — assignation de globaux depuis les fonctions Lua
+
+`strict.lua` autorise l'assignation à des globaux non déclarés uniquement depuis un **main chunk** (`debug.getinfo(2,"S").what == "main"`). Depuis une fonction Lua (`"Lua"`), l'assignation à un global non déclaré lève une erreur.
+
+**Règle** : tout global écrit à runtime depuis une fonction doit être pré-déclaré au top-level de modmain.lua :
+```lua
+GLOBAL.WARLY_CURRENT_CHEF = nil   -- top-level = OK
+-- plus tard dans une fonction :
+GLOBAL.WARLY_CURRENT_CHEF = doer  -- OK car déclaré
+```
+
+### Globals exposés dans le sandbox mod (Phase 4)
+
+| Accès | Exemples |
+|-------|---------|
+| Direct (mod API) | `AddCookerRecipe`, `AddPrefabPostInit`, `AddComponentPostInit` |
+| Via `GLOBAL.` | `FOODTYPE`, `net_string`, `GetString` |
+| Direct (tables) | `TUNING`, `STRINGS`, `AllRecipes` |
+
+### Enregistrement de recettes sur le crock pot — bypass du tracking mod
+
+`AddCookerRecipe(cooker, recipe)` enregistre le plat dans `mod.cookerrecipes`. Ensuite, `IsModCookingProduct` retourne `true`, et `SetProductSymbol` (dans `portablecookpot.lua`) cherche un build animé nommé d'après le plat plutôt que `"cook_pot_food"` → icone manquante pour les plats vanilla.
+
+**Pattern correct** pour modifier ou ajouter une recette vanilla sans casser l'icone :
+```lua
+local cooking = _require("cooking")
+cooking.recipes["cookpot"] = cooking.recipes["cookpot"] or {}
+cooking.recipes["cookpot"]["moqueca"] = recipe       -- nouveau
+cooking.recipes["portablecookpot"]["moqueca"] = recipe  -- remplacement vanilla
+```
+
+`_require("cooking")` retourne le module en cache. L'assignation directe bypass le tracking mod → `IsModCookingProduct` retourne `false` → build `"cook_pot_food"` → icone correcte.
+
+### Stats des prefabs de nourriture — `AddPrefabPostInit` obligatoire
+
+Les stats (`health`, `hunger`, `sanity`) des plats crock pot sont définies dans une **closure** générée par `MakePreparedFood(data)` dans `prefabs/preparedfoods.lua` :
+
+```lua
+-- preparedfoods.lua
+for k, v in pairs(require("preparedfoods_warly")) do
+    table.insert(prefs, MakePreparedFood(v))  -- closure capture v.hunger, v.health...
+end
+```
+
+`require("preparedfoods_warly")` lit le fichier **vanilla** directement. Modifier la table recipe via `cooking.recipes` ne change pas les stats du prefab.
+
+**Pattern correct** pour modifier les stats d'un plat vanilla :
+```lua
+AddPrefabPostInit("moqueca", function(inst)
+    if inst.components.edible then
+        inst.components.edible.hungervalue = 90
+        -- inst.components.edible.healthvalue = X
+        -- inst.components.edible.sanityvalue = X
+    end
+end)
+```
