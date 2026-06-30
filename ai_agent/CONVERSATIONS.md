@@ -286,3 +286,39 @@ Deux bugs identifiés et corrigés dans le code initial :
 ### Prochaine étape
 
 **Phase 4 — Étape 10 (suite)** : appliquer le même pattern aux 6 plats vanilla restants (monstertartare, glowberrymousse, bonesoup, nightmarepie, frogfishbowl, gazpacho)
+
+---
+
+## Session 9 — 2026-06-30
+
+### Ce qui a été fait
+
+**Étape 10 — Plats vanilla restants (6/7 terminés) :**
+
+Code fourni et testé pour :
+- `bonesoup` — warly_only, stats identiques vanilla (+32/+150/+5), recette inchangée
+- `monstertartare` — warly_only, hunger 62.5 → 75 (via `AddPrefabPostInit`)
+- `nightmarepie` (grim galette) — warly_only, recette changée (2 nightmare fuels + `tags.veggie >= 1` au lieu de potato+onion), HP 1 → 5 (via `AddPrefabPostInit`)
+- `frogfishbowl` (fish cordon bleu) — warly_only, priorité augmentée à 35 (conflict surf'n turf priority 30), durée `buff_moistureimmunity` day_time → TOTAL_DAY_TIME
+- `gazpacho` (asparagazpacho) — warly_only, `temperatureduration` → TOTAL_DAY_TIME (via `AddPrefabPostInit`)
+- `voltgoatjelly` (volt goat chaud-froid) — déplacé de l'étape 11 vers l'étape 10 car c'est un plat vanilla modifié, warly_only, recette changée (lightninggoathorn + 1 sweetener + 1 frozen au lieu de horn + 2 sweeteners), sanité 10 → 5 (via `AddPrefabPostInit`), durée `buff_electricattack` → TOTAL_DAY_TIME, effet -10% damage given supprimé de la spec
+
+Reste : `glowberrymousse` (délibérément mis de côté — cas le plus complexe, décroissance lumière custom)
+
+**Bugs corrigés durant les tests :**
+
+1. **Durée des buffs ne changeait pas** (frogfishbowl, voltgoatjelly) : l'`oneatenfn` dans la table `cooking.recipes` n'est jamais appelé. Fix : `AddPrefabPostInit` sur le prefab food, en wrappant `edible.oneaten` (pas `edible.oneatenfn` — piège critique, voir TECHNICAL.md).
+
+2. **Priorité frogfishbowl** : conflict avec `surfnturf` (priority 30). Fix : priority 35 sur frogfishbowl.
+
+3. **Gazpacho — effet température** : `temperature`/`temperatureduration` dans la table de recette n'affectent pas le prefab. Fix : `AddPrefabPostInit("gazpacho", ...)` pour écrire directement sur `edible.temperaturedelta` et `edible.temperatureduration`.
+
+### Leçons de debugging critiques (voir TECHNICAL.md)
+
+- `edible.oneaten` est le vrai champ (via `SetOnEatenFn`), pas `edible.oneatenfn` — écrire sur `oneatenfn` ne fait rien
+- Durées buffs vanilla = `day_time` (~5 min, juste la phase de jour). "1 jour" dans la spec = `TUNING.TOTAL_DAY_TIME` (~8 min, cycle complet)
+- `EntityScript:AddDebuff` retourne `true`/`false`, pas l'entité buff → utiliser `debuffable:GetDebuff(name)` pour récupérer l'entité et modifier son timer
+
+### Prochaine étape
+
+**Phase 4 — Étape 10 (fin)** : `glowberrymousse` (recette simplifiée + hunger 37.5→25 + décroissance lumière custom côté client)

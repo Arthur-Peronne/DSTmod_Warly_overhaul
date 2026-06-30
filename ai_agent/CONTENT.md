@@ -118,9 +118,9 @@ Cuisinables par Warly uniquement, sur n'importe quel crock pot.
 
 | Plat                  | Ingrédients                         | Exclusions | Type  | HP  | Faim  | Sanité | Effet                             | Durée  |
 |-----------------------|-------------------------------------|------------|-------|-----|-------|--------|-----------------------------------|--------|
-| Spiky salad           | 3 cactus + 1 pomegranate            | Non-edible | Veggie| -3  | +25   | +10    | +20% damage given                 | 1 jour |
+| Spiky purée           | 3 cactus + 1 pomegranate            | Non-edible | Veggie| -3  | +25   | +10    | +20% damage given                 | 1 jour |
 | Roasted vegetables    | 2 garlics + 1 vegetable value       | Non-edible | Veggie| +15 | +25   | +5     | -20% damage taken                 | 1 jour |
-| Volt goat chaud-froid | 1 volt goat horn + 1 honey + 1 ice  | /          | All   | +3  | +37.5 | +5     | -10% damage given + electric damage | 1 jour |
+| Volt goat chaud-froid | 1 volt goat horn + 1 honey + 1 ice  | /          | All   | +3  | +37.5 | +5     | electric damage | 1 jour |
 
 ---
 
@@ -156,9 +156,10 @@ Options : 80 / 100 / 116 (défaut) / 140 / 160 / 200.
 Permet à Wigfrid de manger les plats Veggie et à Wurt de manger les plats Meat/Fish.
 Les restrictions "Non-edible" (ingrédients) ne sont pas affectées par ce toggle.
 
-### Durée des effets x1.5 (toggle ON/OFF)
-Active ou désactive le bonus de durée x1.5 sur les buffs des plats exclusifs pour Warly.
-Valeur par défaut : ON.
+### Durée des effets  (toggle ON/OFF)
+Modifie le bonus de durée x1.5 sur les buffs des plats exclusifs pour Warly.
+Valeur par défaut : 1.5.
+Options: 1.0, 1.5, 2.0
 
 ### Taille de la mémoire alimentaire (4 valeurs configurables)
 Si default, on continue comme le mod habituel (2 au départ, puis 3 jour 36, puis 4 jour 71). Sinon, valeur fixe tout au long du jeu.
@@ -167,6 +168,7 @@ Valeurs par défaut : default, 2, 3, 4
 ### Multiplicateurs de mémoire (4 valeurs configurables)
 Chaque multiplicateur (1re, 2e, 3e, 4e occurrence) est réglable indépendamment.
 Valeurs par défaut : 0.75 / 0.50 / 0.25 / 0.00.
+Options: 0.00, 0.05, 0.10, 0.15, ......, 0.95, 1.00 pour chacune des 4 valeurs 
 
 ### Chef Pouch au départ (toggle ON/OFF)
 Par defaut OFF 

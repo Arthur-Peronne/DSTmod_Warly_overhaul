@@ -274,3 +274,226 @@ local cooking = _require("cooking")
 cooking.recipes["cookpot"] = cooking.recipes["cookpot"] or {}
 cooking.recipes["cookpot"]["moqueca"] = moqueca
 cooking.recipes["portablecookpot"]["moqueca"] = moqueca
+
+-- ─── bonesoup (bone bouillon) ───────────────────────────────────────────────
+-- Stats identiques au vanilla (32 HP / 150 faim / 5 sanité), on ajoute juste
+-- la restriction warly_only et l'accès depuis le cookpot normal.
+local bonesoup = {
+    name = "bonesoup",
+    test = warly_only(function(cooker, names, tags)
+        return names.boneshard and names.boneshard == 2
+            and (names.onion or names.onion_cooked)
+            and (tags.inedible and tags.inedible < 3)
+    end),
+    priority  = 30,
+    foodtype  = GLOBAL.FOODTYPE.MEAT,
+    health    = TUNING.HEALING_MEDSMALL * 4,  -- 32
+    hunger    = TUNING.CALORIES_LARGE * 4,    -- 150
+    sanity    = TUNING.SANITY_TINY,           -- 5
+    perishtime = TUNING.PERISH_MED,
+    cooktime  = 2,
+    weight    = 1,
+    tags      = {"masterfood"},
+    cookbook_category = "portablecookpot",
+}
+cooking.recipes["cookpot"]["bonesoup"]        = bonesoup
+cooking.recipes["portablecookpot"]["bonesoup"] = bonesoup
+
+-- ─── monstertartare ─────────────────────────────────────────────────────────
+-- Seul changement : faim 62.5 → 75. On corrige via AddPrefabPostInit.
+local monstertartare = {
+    name = "monstertartare",
+    test = warly_only(function(cooker, names, tags)
+        return tags.monster and tags.monster >= 2 and not tags.inedible
+    end),
+    priority         = 30,
+    foodtype         = GLOBAL.FOODTYPE.MEAT,
+    secondaryfoodtype = GLOBAL.FOODTYPE.MONSTER,
+    health    = -TUNING.HEALING_MED,        -- -20
+    hunger    = 75,                          -- vs vanilla 62.5
+    sanity    = -TUNING.SANITY_MEDLARGE,    -- -20
+    perishtime = TUNING.PERISH_MED,
+    cooktime  = 0.5,
+    weight    = 1,
+    tags      = {"masterfood", "monstermeat"},
+    cookbook_category = "portablecookpot",
+}
+
+AddPrefabPostInit("monstertartare", function(inst)
+    if inst.components.edible then
+        inst.components.edible.hungervalue = 75
+    end
+end)
+
+cooking.recipes["cookpot"]["monstertartare"]        = monstertartare
+cooking.recipes["portablecookpot"]["monstertartare"] = monstertartare
+
+-- ─── frogfishbowl (fish cordon bleu) ────────────────────────────────────────
+local frogfishbowl = {
+    name = "frogfishbowl",
+    test = warly_only(function(cooker, names, tags)
+        return ((names.froglegs and names.froglegs >= 2)
+            or (names.froglegs_cooked and names.froglegs_cooked >= 2)
+            or (names.froglegs and names.froglegs_cooked))
+            and tags.fish and tags.fish >= 1
+            and not tags.inedible
+    end),
+    priority   = 35,
+    foodtype   = GLOBAL.FOODTYPE.MEAT,
+    health     = TUNING.HEALING_MED,      -- 20
+    hunger     = TUNING.CALORIES_LARGE,   -- 37.5
+    sanity     = -TUNING.SANITY_SMALL,    -- -10
+    perishtime = TUNING.PERISH_FASTISH,
+    cooktime   = 2,
+    weight     = 1,
+    tags       = {"masterfood"},
+    prefabs    = {"buff_moistureimmunity"},
+    oneatenfn  = function(inst, eater)
+        eater:AddDebuff("buff_moistureimmunity", "buff_moistureimmunity")
+        local buff = eater.components.debuffable
+            and eater.components.debuffable:GetDebuff("buff_moistureimmunity")
+        if buff ~= nil and buff.components.timer ~= nil then
+            buff.components.timer:SetTimeLeft("buffover", TUNING.TOTAL_DAY_TIME)
+        end
+    end,
+    cookbook_category = "portablecookpot",
+}
+
+AddPrefabPostInit("frogfishbowl", function(inst)
+    if inst.components.edible then
+        local orig = inst.components.edible.oneaten
+        inst.components.edible.oneaten = function(item, eater)
+            if orig then orig(item, eater) end
+            local buff = eater.components.debuffable
+                and eater.components.debuffable:GetDebuff("buff_moistureimmunity")
+            if buff ~= nil and buff.components.timer ~= nil then
+                buff.components.timer:SetTimeLeft("buffover", TUNING.TOTAL_DAY_TIME)
+            end
+        end
+    end
+end)
+
+cooking.recipes["cookpot"]["frogfishbowl"]        = frogfishbowl
+cooking.recipes["portablecookpot"]["frogfishbowl"] = frogfishbowl
+
+
+-- ─── gazpacho (asparagazpacho) ───────────────────────────────────────────────
+-- Stats identiques au vanilla (3 HP / 25 faim / 10 sanité).
+-- Les champs temperature/temperatureduration gèrent le bonus de froid directement
+-- dans le composant edible, sans oneatenfn.
+local gazpacho = {
+    name = "gazpacho",
+    test = warly_only(function(cooker, names, tags)
+        return ((names.asparagus and names.asparagus >= 2)
+            or (names.asparagus_cooked and names.asparagus_cooked >= 2)
+            or (names.asparagus and names.asparagus_cooked))
+            and tags.frozen and tags.frozen >= 2
+    end),
+    priority            = 30,
+    foodtype            = GLOBAL.FOODTYPE.VEGGIE,
+    health              = TUNING.HEALING_SMALL,          -- 3
+    hunger              = TUNING.CALORIES_MED,           -- 25
+    sanity              = TUNING.SANITY_SMALL,           -- 10
+    temperature         = TUNING.COLD_FOOD_BONUS_TEMP,   -- -40
+    temperatureduration = TUNING.TOTAL_DAY_TIME, -- 1 jour
+    perishtime          = TUNING.PERISH_SLOW,
+    cooktime            = 0.5,
+    weight              = 1,
+    tags                = {"masterfood", "fooddrink"},
+    cookbook_category   = "portablecookpot",
+}
+cooking.recipes["cookpot"]["gazpacho"]        = gazpacho
+cooking.recipes["portablecookpot"]["gazpacho"] = gazpacho
+
+-- ─── nightmarepie (grim galette) ─────────────────────────────────────────────
+-- Nouvelle recette : 2 nightmare fuels + 1 valeur végétale (vs vanilla : 2 NF + potato + onion)
+-- HP corrigé via AddPrefabPostInit : HEALING_TINY (1) → 5
+-- On conserve l'oneatenfn vanilla qui swape HP ↔ Sanité en %.
+local nightmarepie = {
+    name = "nightmarepie",
+    test = warly_only(function(cooker, names, tags)
+        return names.nightmarefuel and names.nightmarefuel == 2
+            and tags.veggie and tags.veggie >= 1
+    end),
+    priority   = 30,
+    foodtype   = GLOBAL.FOODTYPE.VEGGIE,
+    health     = TUNING.HEALING_TINY,   -- 1 (écrasé par AddPrefabPostInit → 5)
+    hunger     = TUNING.CALORIES_MED,   -- 25
+    sanity     = TUNING.SANITY_TINY,    -- 5
+    perishtime = TUNING.PERISH_MED,
+    cooktime   = 2,
+    weight     = 1,
+    tags       = {"masterfood", "unsafefood"},
+    oneatenfn  = function(inst, eater)
+        if eater.components.sanity ~= nil
+            and eater.components.health ~= nil
+            and eater.components.oldager == nil
+        then
+            local sanity_pct = eater.components.sanity:GetPercent()
+            local health_pct = eater.components.health:GetPercent()
+            eater.components.sanity:DoDelta(
+                health_pct * eater.components.sanity.max - eater.components.sanity.current)
+            eater.components.health:DoDelta(
+                sanity_pct * eater.components.health.maxhealth - eater.components.health.currenthealth,
+                nil, "nightmarepie")
+        end
+    end,
+    cookbook_category = "portablecookpot",
+}
+
+AddPrefabPostInit("nightmarepie", function(inst)
+    if inst.components.edible then
+        inst.components.edible.healthvalue = 5
+    end
+end)
+
+cooking.recipes["cookpot"]["nightmarepie"]        = nightmarepie
+cooking.recipes["portablecookpot"]["nightmarepie"] = nightmarepie
+
+-- ─── voltgoatjelly (volt goat chaud-froid) ──────────────────────────────────
+local voltgoatjelly = {
+    name = "voltgoatjelly",
+    test = warly_only(function(cooker, names, tags)
+        return names.lightninggoathorn
+            and tags.sweetener and tags.sweetener >= 1
+            and tags.frozen   and tags.frozen   >= 1
+    end),
+    priority   = 30,
+    foodtype   = GLOBAL.FOODTYPE.GOODIES,
+    health     = TUNING.HEALING_SMALL,   -- 3
+    hunger     = TUNING.CALORIES_LARGE,  -- 37.5
+    sanity     = TUNING.SANITY_TINY,     -- 5 (vanilla = SANITY_SMALL = 10)
+    perishtime = TUNING.PERISH_MED,
+    cooktime   = 2,
+    weight     = 1,
+    tags       = {"masterfood"},
+    prefabs    = {"buff_electricattack"},
+    oneatenfn  = function(inst, eater)
+        -- Buff électrique avec durée 1 jour complet
+        eater:AddDebuff("buff_electricattack", "buff_electricattack")
+        local buff = eater.components.debuffable
+            and eater.components.debuffable:GetDebuff("buff_electricattack")
+        if buff ~= nil and buff.components.timer ~= nil then
+            buff.components.timer:SetTimeLeft("buffover", TUNING.TOTAL_DAY_TIME)
+        end
+    end,
+    cookbook_category = "portablecookpot",
+}
+
+AddPrefabPostInit("voltgoatjelly", function(inst)
+    if inst.components.edible then
+        inst.components.edible.sanityvalue = 5
+        local orig = inst.components.edible.oneaten
+        inst.components.edible.oneaten = function(item, eater)
+            if orig then orig(item, eater) end
+            local buff = eater.components.debuffable
+                and eater.components.debuffable:GetDebuff("buff_electricattack")
+            if buff ~= nil and buff.components.timer ~= nil then
+                buff.components.timer:SetTimeLeft("buffover", TUNING.TOTAL_DAY_TIME)
+            end
+        end
+    end
+end)
+
+cooking.recipes["cookpot"]["voltgoatjelly"]        = voltgoatjelly
+cooking.recipes["portablecookpot"]["voltgoatjelly"] = voltgoatjelly

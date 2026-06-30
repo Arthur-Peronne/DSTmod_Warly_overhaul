@@ -405,6 +405,91 @@ GLOBAL.WARLY_CURRENT_CHEF = doer  -- OK car déclaré
 | Via `GLOBAL.` | `FOODTYPE`, `net_string`, `GetString` |
 | Direct (tables) | `TUNING`, `STRINGS`, `AllRecipes` |
 
+### Durées des buffs vanilla vs mod
+
+Les buffs alimentaires vanilla utilisent `day_time` (phase de jour uniquement = `seg_time × 10`), pas un jour complet :
+
+| Constante | Valeur | Durée réelle |
+|-----------|--------|-------------|
+| `BUFF_MOISTUREIMMUNITY_DURATION` | `day_time` | ~5 min (10 segments) |
+| `BUFF_ELECTRICATTACK_DURATION` | `day_time` | ~5 min (10 segments) |
+| `BUFF_FOOD_TEMP_DURATION` | `day_time` | ~5 min (10 segments) |
+| `TUNING.TOTAL_DAY_TIME` | `seg_time × 16` | ~8 min (16 segments) |
+
+**"1 jour"** dans les specs du mod = `TUNING.TOTAL_DAY_TIME` (cycle complet jour + crépuscule + nuit).
+
+### `edible.oneaten` vs `edible.oneatenfn` — champ critique
+
+Dans le composant edible, la fonction de consommation est stockée dans **`self.oneaten`** (via `SetOnEatenFn()`), pas dans `self.oneatenfn`.
+
+```lua
+-- edible.lua
+function Edible:SetOnEatenFn(fn)
+    self.oneaten = fn      -- ← champ réel
+end
+function Edible:OnEaten(eater)
+    if self.oneaten ~= nil then
+        self.oneaten(self.inst, eater)  -- ← appelé avec (food, eater)
+    end
+    ...
+end
+```
+
+`MakePreparedFood` (dans `prefabs/preparedfoods.lua`) appelle `inst.components.edible:SetOnEatenFn(data.oneatenfn)`. Donc le champ `data.oneatenfn` du fichier vanilla est bien stocké, mais sous le nom `oneaten`.
+
+**Piège** : écrire `inst.components.edible.oneatenfn = fn` n'a aucun effet — ce champ n'est jamais lu par le moteur.
+
+### `oneatenfn` dans la table de recette `cooking.recipes` — jamais appelé
+
+La table passée à `cooking.recipes["cookpot"]["nom"] = recipe` détermine **uniquement quel prefab est produit** (via `CalculateRecipe`). Les champs `oneatenfn`, `temperature`, `temperatureduration` dans cette table **ne sont pas appliqués au prefab** — ils sont ignorés côté comportement.
+
+Les comportements à la consommation viennent exclusivement de `edible.oneaten`, `edible.temperaturedelta`, `edible.temperatureduration` définis par `MakePreparedFood` depuis les fichiers vanilla `preparedfoods_warly.lua` / `preparedfoods.lua`.
+
+→ Pour modifier ces comportements : utiliser **`AddPrefabPostInit`** sur le prefab de nourriture.
+
+### Pattern : override durée d'un buff alimentaire
+
+```lua
+AddPrefabPostInit("nom_du_plat", function(inst)
+    if inst.components.edible then
+        local orig = inst.components.edible.oneaten   -- ← "oneaten", pas "oneatenfn"
+        inst.components.edible.oneaten = function(item, eater)
+            if orig then orig(item, eater) end         -- appliquer le buff vanilla (AddDebuff)
+            -- Puis corriger la durée
+            local buff = eater.components.debuffable
+                and eater.components.debuffable:GetDebuff("nom_du_buff")
+            if buff ~= nil and buff.components.timer ~= nil then
+                buff.components.timer:SetTimeLeft("buffover", TUNING.TOTAL_DAY_TIME)
+            end
+        end
+    end
+end)
+```
+
+**Pourquoi `GetDebuff` après `AddDebuff`** : `EntityScript:AddDebuff` retourne `true`/`false`, pas l'entité buff. Il faut passer par `eater.components.debuffable:GetDebuff(name)` pour récupérer l'entité.
+
+**Pourquoi ça marche aussi à l'extension** : quand le joueur mange le même plat une 2e fois, `Debuffable:AddDebuff` appelle `OnExtended` qui remet le timer à la durée vanilla, puis notre `SetTimeLeft` l'écrase juste après. L'ordre est garanti.
+
+### `edible.temperaturedelta` et `edible.temperatureduration` — champs corrects
+
+Pour le gazpacho (asparagazpacho), les champs du prefab sont :
+
+```lua
+-- Définis par MakePreparedFood depuis preparedfoods_warly.lua
+inst.components.edible.temperaturedelta   = data.temperature       -- ex : TUNING.COLD_FOOD_BONUS_TEMP
+inst.components.edible.temperatureduration = data.temperatureduration  -- ex : TUNING.BUFF_FOOD_TEMP_DURATION
+```
+
+Pour modifier via `AddPrefabPostInit` :
+```lua
+AddPrefabPostInit("gazpacho", function(inst)
+    if inst.components.edible then
+        inst.components.edible.temperaturedelta   = TUNING.COLD_FOOD_BONUS_TEMP
+        inst.components.edible.temperatureduration = TUNING.TOTAL_DAY_TIME
+    end
+end)
+```
+
 ### Enregistrement de recettes sur le crock pot — bypass du tracking mod
 
 `AddCookerRecipe(cooker, recipe)` enregistre le plat dans `mod.cookerrecipes`. Ensuite, `IsModCookingProduct` retourne `true`, et `SetProductSymbol` (dans `portablecookpot.lua`) cherche un build animé nommé d'après le plat plutôt que `"cook_pot_food"` → icone manquante pour les plats vanilla.

@@ -142,3 +142,8 @@ Stats vanilla moqueca (référence avant Phase 5) :
 ```lua
 c_supergodmode()   -- toggle ON/OFF (même commande)
 ```
+
+### Add wetness 
+
+ThePlayer.components.moisture:SetPercent(1)  -- or a specific value
+TheWorld:PushEvent("ms_forceprecipitation") 

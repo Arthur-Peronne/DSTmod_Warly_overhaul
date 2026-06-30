@@ -35,6 +35,11 @@
   - [x] Si `GetMultiplier == 0` : retourner false sans consommer + message de refus
   - [x] Override `PrefersToEat` (pas `Eat`) + listener `wonteatfood` pour le speech SAME_OLD_5
 
+- [ ] **7bis. Option: modification des multiplicateurs par l'utilisateur du mod**
+  - [ ] Creer les options dans modinfo.lua
+  - [ ] Brancher les options dans le code
+
+
 ---
 
 ## Phase 3 — Affichage HUD mémoire
@@ -72,28 +77,28 @@
 - [ ] **10. Modifier les plats vanilla existants** (via override dans modmain)
   - [x] Implémenter la restriction "cuisinables par Warly uniquement" sur tous les plats exclusifs (tâches 9 et 10)
   - [x] `moqueca` — ajuster recette et stats
-  - [ ] `monstertartare` — ajuster stats (-20 HP / +75 faim / -20 sanity)
+  - [x] `monstertartare` — hunger 62.5 → 75 (via `AddPrefabPostInit`)
   - [ ] `glowberrymousse` — ajuster ingrédients (1 glowberry value + 1 fruit value), garder le `SpawnPrefab("wormlight_light_greater")` vanilla
     - Décroissance lumière custom : 0–90% durée → rayon constant 100%, 90–100% durée → décroissance linéaire 100%→0%
     - Implémentation : `AddPrefabPostInit("wormlight_light_fx_greater", ...)` côté client (le rayon est géré client-side dans `OnUpdateLight`)
-  - [ ] `bonesoup` → bone bouillon — ajuster stats (+32 HP / +150 faim / +5 sanity)
-  - [ ] `nightmarepie` → grim galette — changer ingrédients (2 nightmare fuels + 1 vegetable value), garder l'`oneatenfn` de swap HP↔Sanité
-  - [ ] `frogfishbowl` → fish cordon bleu — garder `AddDebuff("buff_moistureimmunity")`, ajuster stats
-  - [ ] `gazpacho` → asparagazpacho — garder les champs `temperature`/`temperatureduration`, ajuster recette
+  - [x] `bonesoup` → bone bouillon — stats identiques vanilla, warly_only + cookpot
+  - [x] `nightmarepie` → grim galette — recette : 2 nightmare fuels + `tags.veggie >= 1` (plus de potato/onion requis), HP 1 → 5 (via `AddPrefabPostInit`)
+  - [x] `frogfishbowl` → fish cordon bleu — priority 35 (> surfnturf 30), durée `buff_moistureimmunity` day_time → TOTAL_DAY_TIME (via `AddPrefabPostInit` + `edible.oneaten` wrapper + `debuffable:GetDebuff` + `timer:SetTimeLeft`)
+  - [x] `gazpacho` → asparagazpacho — `edible.temperatureduration` → TOTAL_DAY_TIME (via `AddPrefabPostInit`)
+  - [x] `voltgoatjelly` → volt goat chaud-froid — recette : horn + 1 sweetener + 1 frozen, sanité 10 → 5, durée `buff_electricattack` → TOTAL_DAY_TIME (même pattern que frogfishbowl)
 
 - [ ] **11. Créer les plats vraiment nouveaux** (patterns vanilla réutilisés)
-  - [ ] `salted caramel crepes` — feeding, base `freshfruitcrepes` modifiée
-  - [ ] `scary parmentier` — feeding, base `potatosouffle` modifiée
-  - [ ] `spicy burger` — `temperature = HOT_FOOD_BONUS_TEMP` (pattern `dragonchilisalad`)
-  - [ ] `sweet smoothie` — `AddDebuff("buff_workeffectiveness")` (pattern spice sucre/honey crystals)
-  - [ ] `salted cod soup` — `AddDebuff` speed (à vérifier le prefab vanilla disponible)
-  - [ ] `spiky salad` — `AddDebuff("buff_attack")` (pattern spice chili)
-  - [ ] `roasted vegetables` — `AddDebuff("buff_playerabsorption")` (pattern spice garlic)
-  - [ ] `volt goat chaud-froid` — `AddDebuff("buff_electricattack")` (pattern `voltgoatjelly`)
+  - [ ] `salted caramel crepes` — feeding, base `freshfruitcrepes` modifiée, icône `freshfruitcrepes` 
+  - [ ] `scary parmentier` — feeding, base `potatosouffle` modifiée, icône `potatosouffle`
+  - [ ] `spicy burger` — `temperature = HOT_FOOD_BONUS_TEMP` (pattern `dragonchilisalad`), icône "Steamed ham sandwich" (TO BE GIVEN)
+  - [ ] `sweet smoothie` — `AddDebuff("buff_workeffectiveness")` (pattern spice sucre/honey crystals), icône "Iced Tea" (TO BE GIVEN)
+  - [ ] `salted cod soup` — `AddDebuff` speed (à vérifier le prefab vanilla disponible), icône "Tropical bouillabaisse" (TO BE GIVEN)
+  - [ ] `spiky purée` — `AddDebuff("buff_attack")` (pattern spice chili), icône "Ceviche" (TO BE GIVEN)
+  - [ ] `roasted vegetables` — `AddDebuff("buff_playerabsorption")` (pattern spice garlic), icône "Feijoada" (TO BE GIVEN)
 
 - [ ] **12. Bonus Warly sur ses plats exclusifs**
   - [ ] +15 faim : via `custom_stats_mod_fn` si le plat est dans la liste config
-  - [ ] x1.5 durée des effets : intercepter `AddDebuff` pour allonger la durée, ou patcher le buff prefab à la volée au moment de l'`oneatenfn`
+  - [ ] x1.5 durée des effets : via `AddPrefabPostInit` sur chaque plat — wrapper `edible.oneaten` (pas `oneatenfn` !) → `debuffable:GetDebuff(name)` → `timer:SetTimeLeft("buffover", duration * 1.5)` (pattern établi en étape 10 pour frogfishbowl et voltgoatjelly)
 
 - [ ] **13. Toggle plats mangeables par tous**
   - [ ] Retirer la restriction Wigfrid/Wurt sur les plats Veggie/Meat
